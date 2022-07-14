@@ -39,6 +39,13 @@
     </form>
 
     <script>
+      // User Info
+      const websocket_id = "1657768603.644358";
+      // var url = window.location.pathname;
+      // var inbox_hash = url.substring(url.lastIndexOf("/") + 1);
+      // console.log(id);
+      // get invox hash from url
+
       let ws = null;
       // Display logging information in the document.
       function log(s) {
@@ -89,6 +96,7 @@
           let data = JSON.parse(e.data);
           let message_content = null;
 
+          // if data sent is a text
           if (data["type"] == "comment") {
             message_content = document.createElement("span");
             message_content.appendChild(
@@ -96,6 +104,8 @@
             );
             message_content.setAttribute("class", "comment");
           }
+
+          // if data sent is an announcement
           if (data["type"] == "announcement") {
             message_content = document.createElement("span");
             message_content.appendChild(document.createTextNode(data["msg"]));
