@@ -209,7 +209,7 @@ async def announce(pool, chat_info: dict, action: str):
                     max_len=STREAM_MAX_LEN)
 
 
-async def chat_info_vars(username: str = None, inbox: str = None, token: str = None):
+async def chat_info_vars(inbox: str = None, token: str = None):
     """
     URL parameter info needed for a user to participate in a chat
     :param username:
@@ -217,14 +217,9 @@ async def chat_info_vars(username: str = None, inbox: str = None, token: str = N
     :param inbox:
     :type inbox:
     """
-    user = get_current_user(token)
-    if user:
-        print(user)
-    else:
-        print('An error occurred')
-
+    username = get_current_user(token)
     if username is None and inbox is None:
-        return {"username": str(uuid.uuid4()), "inbox": 'chat:1'}
+        return False
     return {"username": username, "inbox": inbox}
 
 
