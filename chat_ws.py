@@ -10,9 +10,10 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.websockets import WebSocket, WebSocketDisconnect
-
+from core.core import settings
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from aioredis.errors import ConnectionClosedError as ServerConnectionClosedError
+from utils import get_current_user
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
@@ -48,6 +49,8 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 app = FastAPI()
 app.add_middleware(CustomHeaderMiddleware)
 templates = Jinja2Templates(directory="templates")
+
+app = FastAPI(title=settings.PROJECT_NAME)
 
 
 async def get_redis_pool():
@@ -206,7 +209,7 @@ async def announce(pool, chat_info: dict, action: str):
                     max_len=STREAM_MAX_LEN)
 
 
-async def chat_info_vars(username: str = None, inbox: str = None):
+async def chat_info_vars(username: str = None, inbox: str = None, token: str = None):
     """
     URL parameter info needed for a user to participate in a chat
     :param username:
@@ -214,6 +217,11 @@ async def chat_info_vars(username: str = None, inbox: str = None):
     :param inbox:
     :type inbox:
     """
+    user = get_current_user(token)
+    if user:
+        print(user)
+    else:
+        print('An error occurred')
 
     if username is None and inbox is None:
         return {"username": str(uuid.uuid4()), "inbox": 'chat:1'}
