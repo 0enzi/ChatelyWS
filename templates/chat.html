@@ -23,13 +23,13 @@
       user:
       <input type="text" name="username" value="joe" autocomplete="off" />
       inbox_hash:
-      <input type="text" name="room" value="chat1" autocomplete="off" />
+      <input type="text" name="inbox" value="chat1" autocomplete="off" />
       <button>Connect</button>
     </form>
     <div id="chat-info">connected users: <span id="user-list"></span></div>
     <div id="connection-output"></div>
     <ul id="messages" style="height: 60vh; overflow: scroll"></ul>
-    <form id="comment" action="#" style="height: 20vh; color: #fff">
+    <form id="txt" action="#" style="height: 20vh; color: #fff">
       <input type="text" id="messageText" autocomplete="off" />
       <button
         style="background-color: white; border: 1px black; font-size: large"
@@ -64,15 +64,17 @@
           ws.close();
         }
 
-        let room_info = new URLSearchParams(
+        let chat_info = new URLSearchParams(
           new FormData(document.getElementById("chat-info"))
         ).toString();
+
+        console.log(chat_info);
         let ws_protocol = "wss://";
         if (window.location.protocol == "http:") {
           ws_protocol = "ws://";
         }
         ws = new WebSocket(
-          ws_protocol + window.location.host + "/ws?" + room_info
+          ws_protocol + window.location.host + "/ws?" + chat_info
         );
 
         // Listen for the connection open event then call the sendMessage function
@@ -97,12 +99,12 @@
           let message_content = null;
 
           // if data sent is a text
-          if (data["type"] == "comment") {
+          if (data["type"] == "txt") {
             message_content = document.createElement("span");
             message_content.appendChild(
               document.createTextNode(data["uname"] + ": " + data["msg"])
             );
-            message_content.setAttribute("class", "comment");
+            message_content.setAttribute("class", "txt");
           }
 
           // if data sent is an announcement
@@ -137,8 +139,8 @@
           }
         }
         if (ws == null && msg.length) {
-          log("Connection to room is required");
-          console.log("Connection to room is required");
+          log("Connection to inbox is required");
+          console.log("Connection to inbox is required");
         }
         if (!msg.length) {
           log("Empty message");
@@ -146,9 +148,9 @@
         e.preventDefault();
       }
       const chat_info = document.getElementById("chat-info");
-      const commet = document.getElementById("comment");
+      const msg = document.getElementById("txt");
       chat_info.addEventListener("submit", ws_connect);
-      commet.addEventListener("submit", sendMessage);
+      msg.addEventListener("submit", sendMessage);
     </script>
   </body>
 </html>

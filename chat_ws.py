@@ -20,7 +20,7 @@ XREAD_TIMEOUT = 0
 XREAD_COUNT = 100
 NUM_PREVIOUS = 30
 STREAM_MAX_LEN = 1000
-ALLOWED_ROOMS = ['chat1', 'chat2', 'chat3', '1-2', '1-3', 'lab', '1-4', '1-5', '1-7', '2-4']
+ALLOWED_inboxS = ['chat1', 'chat2', 'chat3', '1-2', '1-3', 'lab', '1-4', '1-5', '1-7', '2-4']
 PORT = 9080
 HOST = "0.0.0.0"
 
@@ -48,29 +48,6 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 app = FastAPI()
 app.add_middleware(CustomHeaderMiddleware)
 templates = Jinja2Templates(directory="templates")
-
-
-def get_local_ip():
-    """
-    copy and paste from
-    https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
-    """
-    if os.environ.get('CHAT_HOST_IP', False):
-        return os.environ['CHAT_HOST_IP']
-    try:
-        ip = [l for l in (
-            [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if
-             not ip.startswith("127.")][:1], [
-                [(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s
-                 in
-                 [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][
-            0][
-            0]
-    except OSError as e:
-        print(e)
-        return '127.0.0.1'
-
-    return ip
 
 
 async def get_redis_pool():
@@ -149,7 +126,7 @@ async def ws_recieve(websocket: WebSocket, chat_info: dict):
 
     ws_connected = False
     pool = await get_redis_pool()
-    added = await add_room_user(chat_info, pool)
+    added = await add_inbox_user(chat_info, pool)
 
     if added:
         await announce(pool, chat_info, 'connected')
@@ -166,8 +143,8 @@ async def ws_recieve(websocket: WebSocket, chat_info: dict):
             fields = {
                 'uname': chat_info['username'],
                 'msg': data['msg'],
-                'type': 'comment',
-                'room': chat_info['room']
+                'type': 'txt',
+                'inbox': chat_info['inbox']
             }
             await pool.xadd(stream=cvar_tenant.get() + ":stream",
                             fields=fields,
@@ -175,7 +152,7 @@ async def ws_recieve(websocket: WebSocket, chat_info: dict):
                             max_len=STREAM_MAX_LEN)
             #print('################contextvar ', cvar_tenant.get())
         except WebSocketDisconnect:
-            await remove_room_user(chat_info, pool)
+            await remove_inbox_user(chat_info, pool)
             await announce(pool, chat_info, 'disconnected')
             ws_connected = False
 
@@ -190,20 +167,20 @@ async def ws_recieve(websocket: WebSocket, chat_info: dict):
     pool.close()
 
 
-async def add_room_user(chat_info: dict, pool):
-    #added = await pool.sadd(chat_info['room']+":users", chat_info['username'])
+async def add_inbox_user(chat_info: dict, pool):
+    #added = await pool.sadd(chat_info['inbox']+":users", chat_info['username'])
     added = await pool.sadd(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
     return added
 
 
-async def remove_room_user(chat_info: dict, pool):
-    #removed = await pool.srem(chat_info['room']+":users", chat_info['username'])
+async def remove_inbox_user(chat_info: dict, pool):
+    #removed = await pool.srem(chat_info['inbox']+":users", chat_info['username'])
     removed = await pool.srem(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
     return removed
 
 
-async def room_users(chat_info: dict, pool):
-    #users = await pool.smembers(chat_info['room']+":users")
+async def inbox_users(chat_info: dict, pool):
+    #users = await pool.smembers(chat_info['inbox']+":users")
     users = await pool.smembers(cvar_tenant.get()+":users")
     print(len(users))
     return users
@@ -213,13 +190,13 @@ async def announce(pool, chat_info: dict, action: str):
     """
     add an announcement event onto the redis chat stream
     """
-    users = await room_users(chat_info, pool)
+    users = await inbox_users(chat_info, pool)
     fields = {
         'msg': f"{chat_info['username']} {action}",
         'action': action,
         'type': 'announcement',
         'users': ", ".join(users),
-        'room': chat_info['room']
+        'inbox': chat_info['inbox']
     }
     #print(fields)
 
@@ -229,17 +206,18 @@ async def announce(pool, chat_info: dict, action: str):
                     max_len=STREAM_MAX_LEN)
 
 
-async def chat_info_vars(username: str = None, room: str = None):
+async def chat_info_vars(username: str = None, inbox: str = None):
     """
     URL parameter info needed for a user to participate in a chat
     :param username:
     :type username:
-    :param room:
-    :type room:
+    :param inbox:
+    :type inbox:
     """
-    if username is None and room is None:
-        return {"username": str(uuid.uuid4()), "room": 'chat:1'}
-    return {"username": username, "room": room}
+
+    if username is None and inbox is None:
+        return {"username": str(uuid.uuid4()), "inbox": 'chat:1'}
+    return {"username": username, "inbox": inbox}
 
 
 @app.websocket("/ws")
@@ -247,13 +225,14 @@ async def websocket_endpoint(websocket: WebSocket,
                              chat_info: dict = Depends(chat_info_vars)):
     #print('request.hostname', websocket.url.hostname)
     tenant_id = ":".join([websocket.url.hostname.replace('.', '_'),
-                          chat_info['room']])
+                          chat_info['inbox']])
     cvar_tenant.set(tenant_id)
     cvar_chat_info.set(chat_info)
+    print(chat_info)
 
 
-    # check the user is allowed into the chat room
-    verified = await verify_user_for_room(chat_info)
+    # check the user is allowed into the chat inbox
+    verified = await verify_user_for_inbox(chat_info)
     # open connection
     await websocket.accept()
     if not verified:
@@ -273,7 +252,7 @@ async def websocket_endpoint(websocket: WebSocket,
 async def get(request: Request):
     return templates.TemplateResponse("chat.html",
                                       {"request": request,
-                                       "ip": get_local_ip(),
+                                    #    "ip": get_local_ip(),
                                        "port": PORT})
 
 
@@ -281,11 +260,11 @@ async def get(request: Request):
 async def get(request: Request):
     return templates.TemplateResponse("moderator_chat.html",
                                       {"request": request,
-                                       "ip": get_local_ip(),
+                                    #    "ip": get_local_ip(),
                                        "port": PORT})
 
 
-async def verify_user_for_room(chat_info):
+async def verify_user_for_inbox(chat_info):
     verified = True
     pool = await get_redis_pool()
     if not pool:
@@ -295,14 +274,16 @@ async def verify_user_for_room(chat_info):
     already_exists = await pool.sismember(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
 
     if already_exists:
-        print(chat_info['username'] +' user already_exists in ' + chat_info['room'])
+        print(chat_info['username'] +' user already_exists in ' + chat_info['inbox'])
         verified = False
     # check for restricted names
 
-    # check for restricted rooms
-    # check for non existent rooms
-    # whitelist rooms
-    if not chat_info['room'] in ALLOWED_ROOMS:
+    # check for restricted inboxs
+
+
+    # check for non existent inboxs
+    # whitelist inboxs
+    if not chat_info['inbox'] in ALLOWED_inboxS:
         verified = False
     pool.close()
     return verified
