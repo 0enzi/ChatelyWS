@@ -40,7 +40,7 @@
 
     <script>
       // User Info
-      const websocket_id = "1657768603.644358";
+      const token = "";
       // var url = window.location.pathname;
       // var inbox_hash = url.substring(url.lastIndexOf("/") + 1);
       // console.log(id);
@@ -74,7 +74,12 @@
           ws_protocol = "ws://";
         }
         ws = new WebSocket(
-          ws_protocol + window.location.host + "/ws?" + chat_info
+          ws_protocol +
+            window.location.host +
+            "/ws?" +
+            chat_info +
+            "&token" +
+            token
         );
 
         // Listen for the connection open event then call the sendMessage function
