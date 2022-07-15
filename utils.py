@@ -20,9 +20,9 @@ async def get_current_user(token: str):
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise credentials_exception
+            return False
         return username
     except JWTError:
-        raise credentials_exception
+        return False
         
     
