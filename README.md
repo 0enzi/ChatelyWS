@@ -2,13 +2,9 @@
 
 ## NB this is a subset of ChatelyAPI
 
-how the message is sent
+Client:
+\*\* Sends token & inbox_hash
 
-Front-End req
-
-- usertoken/ info
-- inbox hash
-
-Backend will take inbox hash,
-look it up if it exists if not ......
-get recipient/sender ids if my id==sender then set me as sender in frontend
+ChatelyWS:
+** decodes token to extract username & other relevant info
+** creates a room with inbox hash and validates if user is allowed
