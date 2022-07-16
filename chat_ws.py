@@ -222,7 +222,7 @@ async def chat_info_vars(inbox: str = None, token: str = None):
     user_id = user['user_id']
     if user is None and inbox is None:
         return False
-    return {"username": username, "user_id": user_id, "inbox": inbox}
+    return {"username":  username , "user_id":  user_id , "inbox": inbox}
 
 
 @app.websocket("/ws")
@@ -233,7 +233,7 @@ async def websocket_endpoint(websocket: WebSocket,
                           chat_info['inbox']])
     cvar_tenant.set(tenant_id)
     cvar_chat_info.set(chat_info)
-    print(chat_info)
+    
 
 
     # check the user is allowed into the chat inbox
@@ -275,6 +275,12 @@ async def verify_user_for_inbox(chat_info):
     if not pool:
         print('Redis connection failure')
         return False
+
+    # check the user is allowed into the chat inbox
+    if chat_info['user_id'] not in chat_info['inbox'].split('-'):
+        print('user not in inbox')
+        return False
+   
     # check for duplicated user names
     already_exists = await pool.sismember(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
 
