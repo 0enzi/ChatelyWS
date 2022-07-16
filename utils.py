@@ -1,3 +1,4 @@
+import ast
 import os
 from fastapi import HTTPException
 from jose import JWTError, jwt
@@ -14,10 +15,11 @@ def get_current_user(token: str):
 
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        user = ast.literal_eval(payload.get("sub"))
+        username: str = user['username']
+        if username is None or user is None:
             return False
-        return username
+        return user
     except JWTError:
         return False
         

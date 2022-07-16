@@ -217,10 +217,12 @@ async def chat_info_vars(inbox: str = None, token: str = None):
     :param inbox:
     :type inbox:
     """
-    username = get_current_user(token)
-    if username is None and inbox is None:
+    user = get_current_user(token)
+    username = user['username']
+    user_id = user['user_id']
+    if user is None and inbox is None:
         return False
-    return {"username": username, "inbox": inbox}
+    return {"username": username, "user_id": user_id, "inbox": inbox}
 
 
 @app.websocket("/ws")
