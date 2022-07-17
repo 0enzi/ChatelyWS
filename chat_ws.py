@@ -269,13 +269,14 @@ async def get(request: Request):
                                        "port": PORT})
 
 
-async def verify_user_for_inbox(chat_info):
+async def verify_user_for_inbox(chat_info): 
     verified = True
     pool = await get_redis_pool()
     if not pool:
         print('Redis connection failure')
         return False
 
+    
     # check the user is allowed into the chat inbox
     if chat_info['user_id'] not in chat_info['inbox'].split('-'):
         print('user not in inbox')
