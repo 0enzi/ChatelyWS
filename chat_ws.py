@@ -1,6 +1,7 @@
 import os
 import asyncio
 import aioredis
+from requests_ws import verify_inbox
 import uvloop
 import socket
 import uuid
@@ -147,7 +148,7 @@ async def ws_recieve(websocket: WebSocket, chat_info: dict):
                 'uname': chat_info['username'],
                 'msg': data['msg'],
                 'type': 'txt',
-                'inbox': chat_info['inbox']
+                'inbox': chat_info['inbox_hash']
             }
             await pool.xadd(stream=cvar_tenant.get() + ":stream",
                             fields=fields,
@@ -179,6 +180,7 @@ async def add_inbox_user(chat_info: dict, pool):
 async def remove_inbox_user(chat_info: dict, pool):
     #removed = await pool.srem(chat_info['inbox']+":users", chat_info['username'])
     removed = await pool.srem(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
+    print('TO REMOVED:', removed)
     return removed
 
 
@@ -199,7 +201,7 @@ async def announce(pool, chat_info: dict, action: str):
         'action': action,
         'type': 'announcement',
         'users': ", ".join(users),
-        'inbox': chat_info['inbox']
+        'inbox': chat_info['inbox_hash']
     }
     #print(fields)
 
@@ -218,11 +220,18 @@ async def chat_info_vars(inbox: str = None, token: str = None):
     :type inbox:
     """
     user = get_current_user(token)
+    if not user:
+        return None
     username = user['username']
     user_id = user['user_id']
-    if user is None and inbox is None:
+
+    if user is None or inbox is None:
         return False
-    return {"username":  username , "user_id":  user_id , "inbox": inbox}
+    return {"username": username, 
+            "user_id": user_id ,
+            "inbox_hash": inbox,
+            "token": token
+             }
 
 
 @app.websocket("/ws")
@@ -230,7 +239,7 @@ async def websocket_endpoint(websocket: WebSocket,
                              chat_info: dict = Depends(chat_info_vars)):
     #print('request.hostname', websocket.url.hostname)
     tenant_id = ":".join([websocket.url.hostname.replace('.', '_'),
-                          chat_info['inbox']])
+                          chat_info['inbox_hash']])
     cvar_tenant.set(tenant_id)
     cvar_chat_info.set(chat_info)
     
@@ -241,7 +250,6 @@ async def websocket_endpoint(websocket: WebSocket,
     # open connection
     await websocket.accept()
     if not verified:
-
         print('failed verification')
         print(chat_info)
         await websocket.close()
@@ -276,29 +284,33 @@ async def verify_user_for_inbox(chat_info):
         print('Redis connection failure')
         return False
 
-    
-    # check the user is allowed into the chat inbox
-    if chat_info['user_id'] not in chat_info['inbox'].split('-'):
-        print('user not in inbox')
-        return False
-   
-    # check for duplicated user names
     already_exists = await pool.sismember(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
 
     if already_exists:
-        print(chat_info['username'] +' user already_exists in ' + chat_info['inbox'])
+        print(chat_info['username'] +' user already_exists in ' + chat_info['inbox_hash'])
         verified = False
+    
+    # check the user is allowed into the chat inbox
+    if not verify_inbox(chat_info['inbox_hash'], chat_info['token']):
+        print('could not verify server side')
+        return False
+
+   
+    # check for duplicated user names
+    
     # check for restricted names
 
     # check for restricted inboxs
 
 
     # check for non existent inboxs
+
     # whitelist inboxs
-    if not chat_info['inbox'] in ALLOWED_inboxS:
-        verified = False
+    # if not chat_info['inbox'] in ALLOWED_inboxS:
+        # verified = False
     pool.close()
     return verified
+    
 
 
 @app.on_event("startup")
