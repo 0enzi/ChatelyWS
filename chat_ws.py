@@ -192,8 +192,10 @@ async def inbox_users(chat_info: dict, pool):
 
 
 async def announce(pool, chat_info: dict, action: str):
-    """
-    add an announcement event onto the redis chat stream
+    """ 
+    1. Gets the list of users in the chat
+    2. Creates a message with the action and the users in the chat
+    3. Adds the message to the chat stream 
     """
     users = await inbox_users(chat_info, pool)
     fields = {
@@ -213,11 +215,11 @@ async def announce(pool, chat_info: dict, action: str):
 
 async def chat_info_vars(inbox: str = None, token: str = None):
     """
-    URL parameter info needed for a user to participate in a chat
-    :param username:
-    :type username:
-    :param inbox:
-    :type inbox:
+    The code above does the following:
+    1. Gets the current user from the token
+    2. Gets the username and user_id from the user
+    3. Gets the inbox_hash from the URL parameter
+    4. Returns a dictionary with the below information 
     """
     user = get_current_user(token)
     if not user:
