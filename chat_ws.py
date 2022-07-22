@@ -34,6 +34,7 @@ cvar_tenant = contextvars.ContextVar('tenant', default=None)
 cvar_redis = contextvars.ContextVar('redis', default=None)
 
 
+
 class CustomHeaderMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, header_value='Example'):
         print('__init__')
