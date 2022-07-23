@@ -24,6 +24,7 @@ NUM_PREVIOUS = 30
 STREAM_MAX_LEN = 1000
 ALLOWED_inboxS = ['chat1', 'chat2', 'chat3', '1-2', '1-3', 'lab', '1-4', '1-5', '1-7', '2-4']
 PORT = 9080
+
 HOST = "0.0.0.0"
 
 
@@ -179,9 +180,10 @@ async def add_inbox_user(chat_info: dict, pool):
 
 
 async def remove_inbox_user(chat_info: dict, pool):
-    #removed = await pool.srem(chat_info['inbox']+":users", chat_info['username'])
+    # removed = await pool.srem(chat_info['inbox_hash']+":users", chat_info['username'])
+    # print('REMOVED')
     removed = await pool.srem(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
-    print('TO REMOVED:', removed)
+
     return removed
 
 
@@ -206,12 +208,13 @@ async def announce(pool, chat_info: dict, action: str):
         'users': ", ".join(users),
         'inbox': chat_info['inbox_hash']
     }
-    #print(fields)
+    print(fields)
 
-    await pool.xadd(stream=cvar_tenant.get() + ":stream",
-                    fields=fields,
-                    message_id=b'*',
-                    max_len=STREAM_MAX_LEN)
+    # make user disconnect or sometin
+    # await pool.xadd(stream=cvar_tenant.get() + ":stream",
+    #                 fields=fields,
+    #                 message_id=b'*',
+    #                 max_len=STREAM_MAX_LEN)
 
 
 async def chat_info_vars(inbox: str = None, token: str = None):
@@ -230,6 +233,7 @@ async def chat_info_vars(inbox: str = None, token: str = None):
 
     if user is None or inbox is None:
         return False
+   
     return {"username": username, 
             "user_id": user_id ,
             "inbox_hash": inbox,
@@ -242,7 +246,8 @@ async def websocket_endpoint(websocket: WebSocket,
                              chat_info: dict = Depends(chat_info_vars)):
     #print('request.hostname', websocket.url.hostname)
     tenant_id = ":".join([websocket.url.hostname.replace('.', '_'),
-                          chat_info['inbox_hash']])
+                           chat_info['inbox_hash']])
+    # print('tenant_id', tenant_id)
     cvar_tenant.set(tenant_id)
     cvar_chat_info.set(chat_info)
     
@@ -254,7 +259,7 @@ async def websocket_endpoint(websocket: WebSocket,
     await websocket.accept()
     if not verified:
         print('failed verification')
-        print(chat_info)
+         
         await websocket.close()
     else:
 
@@ -287,6 +292,7 @@ async def verify_user_for_inbox(chat_info):
         print('Redis connection failure')
         return False
 
+    print("CVAR chatinfo", cvar_chat_info.get())
     already_exists = await pool.sismember(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
 
     if already_exists:
