@@ -34,5 +34,4 @@ def verify_inbox(inbox_hash, token):
         print(e)
         return None
     return False
-
-verify_inbox('1-27', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTgyNDg2NzksInN1YiI6InsndXNlcm5hbWUnOiAnYWRtaW5AY2hhdGVseS5pbycsICd1c2VyX2lkJzogMjd9In0.0mgIZHbpMq2dwqLCJ7D2Izwyec0v47qECal19V98u58')
+ 
