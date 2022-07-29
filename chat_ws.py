@@ -16,6 +16,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from aioredis.errors import ConnectionClosedError as ServerConnectionClosedError
 from utils import get_current_user
 
+
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 XREAD_TIMEOUT = 0
@@ -24,7 +25,6 @@ NUM_PREVIOUS = 30
 STREAM_MAX_LEN = 1000
 ALLOWED_inboxS = ['chat1', 'chat2', 'chat3', '1-2', '1-3', 'lab', '1-4', '1-5', '1-7', '2-4']
 PORT = 9080
-
 HOST = "0.0.0.0"
 
 
@@ -33,7 +33,6 @@ cvar_client_addr = contextvars.ContextVar('client_addr', default=None)
 cvar_chat_info = contextvars.ContextVar('chat_info', default=None)
 cvar_tenant = contextvars.ContextVar('tenant', default=None)
 cvar_redis = contextvars.ContextVar('redis', default=None)
-
 
 
 class CustomHeaderMiddleware(BaseHTTPMiddleware):
@@ -52,7 +51,6 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 app = FastAPI()
 app.add_middleware(CustomHeaderMiddleware)
 templates = Jinja2Templates(directory="templates")
-
 app = FastAPI(title=settings.PROJECT_NAME)
 
 
@@ -183,7 +181,6 @@ async def remove_inbox_user(chat_info: dict, pool):
     # removed = await pool.srem(chat_info['inbox_hash']+":users", chat_info['username'])
     # print('REMOVED')
     removed = await pool.srem(cvar_tenant.get()+":users", cvar_chat_info.get()['username'])
-
     return removed
 
 
@@ -210,7 +207,9 @@ async def announce(pool, chat_info: dict, action: str):
     }
     print(fields)
 
-    # make user disconnect or sometin
+    # TODO make user disconnect or SOMETHING
+
+
     # await pool.xadd(stream=cvar_tenant.get() + ":stream",
     #                 fields=fields,
     #                 message_id=b'*',
@@ -267,21 +266,11 @@ async def websocket_endpoint(websocket: WebSocket,
         await asyncio.gather(ws_recieve(websocket, chat_info),
                              ws_send(websocket, chat_info))
 
- 
 
 @app.get("/")
 async def get(request: Request):
     return templates.TemplateResponse("chat.html",
-                                      {"request": request,
-                                    #    "ip": get_local_ip(),
-                                       "port": PORT})
-
-
-@app.get("/moderator")
-async def get(request: Request):
-    return templates.TemplateResponse("moderator_chat.html",
-                                      {"request": request,
-                                    #    "ip": get_local_ip(),
+                                      {"request": request,                     
                                        "port": PORT})
 
 
@@ -304,22 +293,8 @@ async def verify_user_for_inbox(chat_info):
         print('could not verify server side')
         return False
 
-   
-    # check for duplicated user names
-    
-    # check for restricted names
-
-    # check for restricted inboxs
-
-
-    # check for non existent inboxs
-
-    # whitelist inboxs
-    # if not chat_info['inbox'] in ALLOWED_inboxS:
-        # verified = False
     pool.close()
     return verified
-    
 
 
 @app.on_event("startup")
