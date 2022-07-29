@@ -39,7 +39,7 @@
     <script>
       // User Info
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTg1NDg5NzEsInN1YiI6InsndXNlcm5hbWUnOiAnYWRtaW5AY2hhdGVseS5pbycsICd1c2VyX2lkJzogMjd9In0.KYVujssCvJWj0y8WVN9L_a1kTsimqql23Vca880UqTE";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NTk0NDk4MzgsInN1YiI6InsndXNlcm5hbWUnOiAnYWRtaW5AY2hhdGVseS5pbycsICd1c2VyX2lkJzogMX0ifQ.3lw_QjcYIQYVJyFXoOIXE8vLMpso860oWYoV1KB54-c";
       // var url = window.location.pathname;
       // var inbox_hash = url.substring(url.lastIndexOf("/") + 1);
       // console.log(id);
@@ -100,6 +100,7 @@
           let messages = document.getElementById("messages");
           let message = document.createElement("li");
           let data = JSON.parse(e.data);
+          console.log(data)
           let message_content = null;
 
           // if data sent is a text
