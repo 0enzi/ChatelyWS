@@ -4,6 +4,7 @@
     <title>Chately</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
+
   <style type="text/css">
     body {
       background-color: #2a2a2a;
@@ -100,7 +101,7 @@
           let messages = document.getElementById("messages");
           let message = document.createElement("li");
           let data = JSON.parse(e.data);
-          console.log(data)
+          console.log(data);
           let message_content = null;
 
           // if data sent is a text
