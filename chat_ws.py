@@ -22,8 +22,7 @@ REDIS_PORT = 6379
 XREAD_TIMEOUT = 0
 XREAD_COUNT = 100
 NUM_PREVIOUS = 30
-STREAM_MAX_LEN = 1000
-ALLOWED_inboxS = ['chat1', 'chat2', 'chat3', '1-2', '1-3', 'lab', '1-4', '1-5', '1-7', '2-4']
+STREAM_MAX_LEN = 1000 
 PORT = 9080
 HOST = "0.0.0.0"
 
